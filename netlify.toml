@@ -14,6 +14,11 @@
   to = "/datenschutz.html"
   status = 200
 
+[[redirects]]
+  from = "/erfolg"
+  to = "/erfolg.html"
+  status = 200
+
 # Headers for security and caching
 [[headers]]
   for = "/*"
