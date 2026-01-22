@@ -952,8 +952,7 @@
       <h2 class="text-center">Kostenloses Erstgespräch vereinbaren</h2>
       <p class="section-subtitle">Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>
 
-      <form class="contact-form" id="contactForm" name="kontakt" method="POST" data-netlify="true">
-        <input type="hidden" name="form-name" value="kontakt">
+      <form class="contact-form" id="contactForm" name="kontakt" netlify>
         <div class="form-row">
           <div class="form-group">
             <label for="name">Name <span>*</span></label>
@@ -1064,56 +1063,24 @@
       });
     });
 
-    // Form Submit: Send to Netlify Forms + n8n Webhook, show inline success
-    document.getElementById('contactForm').addEventListener('submit', async (e) => {
+    // Form Submit: Show success + send to n8n (for Airtable)
+    document.getElementById('contactForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
       const form = e.target;
       const formData = new FormData(form);
-      formData.append('form-name', 'kontakt'); // Required for Netlify Forms
       const data = Object.fromEntries(formData.entries());
-      const submitBtn = form.querySelector('button[type="submit"]');
 
-      // Disable button during submission
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Wird gesendet...';
+      // Send to n8n webhook (for Airtable)
+      fetch('https://n8n.info-immokonzept.de/webhook/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(() => {});
 
-      try {
-        // Send to Netlify Forms
-        const netlifyResponse = await fetch('/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(formData).toString()
-        });
-
-        // Also send to n8n webhook (for future Airtable integration)
-        fetch('https://n8n.info-immokonzept.de/webhook/lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        }).catch(() => {}); // Silent fail - optional
-
-        if (netlifyResponse.ok) {
-          // Hide form fields, show success message
-          form.querySelectorAll('.form-row, .form-group, .form-submit').forEach(el => el.style.display = 'none');
-          document.getElementById('formSuccess').classList.add('show');
-        } else {
-          throw new Error('Form submission failed');
-        }
-      } catch (err) {
-        console.error('Form error:', err);
-        // Fallback: open email client
-        const subject = encodeURIComponent('Anfrage von ' + data.name);
-        const body = encodeURIComponent(
-          'Name: ' + data.name + '\n' +
-          'Email: ' + data.email + '\n' +
-          'Telefon: ' + (data.telefon || '-') + '\n' +
-          'Interesse: ' + (data.interesse || '-') + '\n' +
-          'Adresse: ' + (data.adresse || '-') + '\n\n' +
-          'Nachricht:\n' + (data.nachricht || '-')
-        );
-        window.location.href = 'mailto:kontakt@info-immokonzept.de?subject=' + subject + '&body=' + body;
-      }
+      // Always show success message
+      form.querySelectorAll('.form-row, .form-group, .form-submit').forEach(el => el.style.display = 'none');
+      document.getElementById('formSuccess').classList.add('show');
     });
 
     // Smooth scroll for anchor links
