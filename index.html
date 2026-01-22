@@ -952,7 +952,11 @@
       <h2 class="text-center">Kostenloses Erstgespräch vereinbaren</h2>
       <p class="section-subtitle">Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>
 
-      <form class="contact-form" id="contactForm">
+      <form class="contact-form" id="contactForm" name="kontakt" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/erfolg">
+        <!-- Honeypot for spam protection -->
+        <p class="hidden" style="display:none;">
+          <label>Don't fill this out: <input name="bot-field" /></label>
+        </p>
         <div class="form-row">
           <div class="form-group">
             <label for="name">Name <span>*</span></label>
@@ -1063,36 +1067,24 @@
       });
     });
 
-    // Form Submit - MVP: mailto fallback, later n8n webhook (Task 4.1)
-    document.getElementById('contactForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
+    // Form Submit: Netlify Forms (primary) + n8n Webhook (parallel for future automation)
+    document.getElementById('contactForm').addEventListener('submit', (e) => {
       const form = e.target;
-      const name = form.querySelector('#name').value;
-      const email = form.querySelector('#email').value;
-      const telefon = form.querySelector('#telefon').value || 'nicht angegeben';
-      const interesse = form.querySelector('#interesse').value || 'nicht angegeben';
-      const adresse = form.querySelector('#adresse').value || 'nicht angegeben';
-      const nachricht = form.querySelector('#nachricht').value || 'keine';
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
 
-      const subject = encodeURIComponent('Neue Anfrage: ' + interesse + ' - ' + name);
-      const body = encodeURIComponent(
-        'Name: ' + name + '\n' +
-        'E-Mail: ' + email + '\n' +
-        'Telefon: ' + telefon + '\n' +
-        'Interesse: ' + interesse + '\n' +
-        'Objektadresse: ' + adresse + '\n\n' +
-        'Nachricht:\n' + nachricht
-      );
+      // Fire webhook in background (non-blocking) for future Airtable integration
+      // This runs parallel to Netlify Forms submission
+      fetch('https://n8n.info-immokonzept.de/webhook/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(err => {
+        // Silently fail - Netlify Forms is the primary handler
+        console.log('Webhook call (optional):', err.message);
+      });
 
-      // Open mailto
-      window.location.href = 'mailto:kontakt@info-immokonzept.de?subject=' + subject + '&body=' + body;
-
-      // Show success after short delay
-      setTimeout(function() {
-        form.style.display = 'none';
-        document.getElementById('formSuccess').classList.add('show');
-      }, 500);
+      // Let Netlify Forms handle the submission (form submits normally to action="/erfolg")
     });
 
     // Smooth scroll for anchor links
