@@ -952,12 +952,7 @@
       <h2 class="text-center">Kostenloses Erstgespräch vereinbaren</h2>
       <p class="section-subtitle">Wir melden uns innerhalb von 24 Stunden bei Ihnen.</p>
 
-      <form class="contact-form" id="contactForm" name="kontakt" method="POST" action="/erfolg" data-netlify="true" netlify-honeypot="bot-field">
-        <!-- Honeypot for spam protection -->
-        <p class="hidden" style="display:none;">
-          <label>Nicht ausfuellen: <input name="bot-field" /></label>
-        </p>
-        <input type="hidden" name="form-name" value="kontakt" />
+      <form class="contact-form" id="contactForm">
         <div class="form-row">
           <div class="form-group">
             <label for="name">Name <span>*</span></label>
@@ -1068,8 +1063,37 @@
       });
     });
 
-    // Form handling - native submission to Netlify Forms
-    // n8n webhook will be added later (Task 4.1)
+    // Form Submit - MVP: mailto fallback, later n8n webhook (Task 4.1)
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const name = form.querySelector('#name').value;
+      const email = form.querySelector('#email').value;
+      const telefon = form.querySelector('#telefon').value || 'nicht angegeben';
+      const interesse = form.querySelector('#interesse').value || 'nicht angegeben';
+      const adresse = form.querySelector('#adresse').value || 'nicht angegeben';
+      const nachricht = form.querySelector('#nachricht').value || 'keine';
+
+      const subject = encodeURIComponent('Neue Anfrage: ' + interesse + ' - ' + name);
+      const body = encodeURIComponent(
+        'Name: ' + name + '\n' +
+        'E-Mail: ' + email + '\n' +
+        'Telefon: ' + telefon + '\n' +
+        'Interesse: ' + interesse + '\n' +
+        'Objektadresse: ' + adresse + '\n\n' +
+        'Nachricht:\n' + nachricht
+      );
+
+      // Open mailto
+      window.location.href = 'mailto:kontakt@info-immokonzept.de?subject=' + subject + '&body=' + body;
+
+      // Show success after short delay
+      setTimeout(function() {
+        form.style.display = 'none';
+        document.getElementById('formSuccess').classList.add('show');
+      }, 500);
+    });
 
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
