@@ -1069,6 +1069,7 @@
 
       const form = e.target;
       const formData = new FormData(form);
+      formData.append('form-name', 'kontakt'); // Required for Netlify Forms
       const data = Object.fromEntries(formData.entries());
       const submitBtn = form.querySelector('button[type="submit"]');
 
